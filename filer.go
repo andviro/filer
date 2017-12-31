@@ -24,4 +24,10 @@ type Meta interface {
 	Stat(fn string) (res FileInfo, err error)
 }
 
+// Service provides all file-related primitives
+type Service interface {
+	Meta
+	Storage
+}
+
 //go:generate moq -out mock/filer.go -pkg mock . FileInfo Storage Backend
