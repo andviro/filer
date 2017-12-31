@@ -7,14 +7,18 @@ import (
 	"strings"
 
 	"github.com/andviro/filer"
+	"github.com/andviro/filer/storage"
 )
+
+// Errors represent disk errors sub-class
+var Errors = storage.Errors.Sub("disk")
 
 // Storage provides on-disk file storage primitives
 type Storage struct {
 	DataDir string `default:"/tmp"` // File base path
 }
 
-var _ filer.Storage = (*Storage)(nil)
+var _ storage.Storage = (*Storage)(nil)
 
 // Ensure concatenates path components with service path prefix and creates
 // directory on disk. Final combined path is returned.
