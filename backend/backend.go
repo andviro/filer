@@ -6,3 +6,5 @@ type Backend interface {
 	CreateTransaction(filename string, commit func(*FileInfo) error) (err error)
 	RemoveTransaction(filename string, commit func(string, *FileInfo) error) (err error)
 }
+
+//go:generate moq -out mock/backend.go -pkg mock . Backend

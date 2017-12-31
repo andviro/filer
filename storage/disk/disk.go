@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/andviro/filer"
 	"github.com/andviro/filer/storage"
 )
 
@@ -41,21 +40,4 @@ func (s *Storage) Open(fn string) (res io.ReadCloser, err error) {
 	res, err = os.Open(fn)
 	err = Errors.Wrap(err, "opening file")
 	return
-}
-
-// Stat returns file info from disk
-func (s *Storage) Stat(fn string) (res filer.FileInfo, err error) {
-	res, err = os.Stat(fn)
-	err = Errors.Wrap(err, "opening file")
-	return
-}
-
-// Remove file from disk
-func (s *Storage) Remove(fn string) error {
-	return Errors.Wrap(os.RemoveAll(fn), "removing")
-}
-
-// Rename file
-func (s *Storage) Rename(from, to string) error {
-	return Errors.Wrap(os.Rename(from, to), "renaming")
 }

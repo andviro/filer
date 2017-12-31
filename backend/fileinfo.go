@@ -6,7 +6,7 @@ import (
 	"github.com/andviro/filer"
 )
 
-// FileInfo stores metadata specifically for Mongo backend
+// FileInfo contains essential file metadata
 type FileInfo struct {
 	DiskSize     int64     // Physical size
 	Names        []string  // Filename aliases
