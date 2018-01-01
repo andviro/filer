@@ -40,7 +40,6 @@ func (b *Backend) Stat(filename string) (res *backend.FileInfo, err error) {
 	defer db.Close()
 	coll := db.C("meta")
 	var fi FileInfo
-	res = &fi.FileInfo
 	err = coll.Find(bson.M{
 		"names": filename,
 		"state": "saved",
@@ -49,10 +48,8 @@ func (b *Backend) Stat(filename string) (res *backend.FileInfo, err error) {
 		err = backend.ErrNotFound.Errorf("%q not found", filename)
 		return
 	}
-	if err != nil {
-		err = Errors.Wrapf(err, "loading meta for %q", filename)
-		return
-	}
+	res = &fi.FileInfo
+	err = Errors.Wrapf(err, "loading meta for %q", filename)
 	return
 }
 
@@ -123,4 +120,26 @@ func (b *Backend) RemoveTransaction(filename string, commit func(*backend.FileIn
 		return Errors.Wrapf(coll.RemoveId(fi.ID), "deleting %q", filename)
 	}
 	return
+}
+
+// Rename changes filename in database
+func (b *Backend) Rename(from, to string) (err error) {
+	db := b.db.Clone()
+	defer db.Close()
+	coll := db.C("meta")
+	err = coll.Update(bson.M{
+		"names": from,
+		"state": "saved",
+	}, bson.M{
+		"$pull": bson.M{
+			"names": from,
+		},
+		"$addToSet": bson.M{
+			"names": to,
+		},
+	})
+	if err == mgo.ErrNotFound {
+		return backend.ErrNotFound.Errorf("%q not found", from)
+	}
+	return Errors.Wrapf(err, "renaming %q to %q", from, to)
 }

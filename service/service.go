@@ -59,5 +59,5 @@ func (s *Service) Remove(fn string) (err error) {
 
 // Rename changes name of file
 func (s *Service) Rename(from, to string) error {
-	return nil
+	return s.backend.Rename(from, to)
 }
