@@ -19,13 +19,8 @@ type Backend struct {
 var _ backend.Backend = (*Backend)(nil)
 
 // New returns new backend instance
-func New(db *mongodb.DB) (res *Backend, err error) {
-	if err = db.Session.Ping(); err != nil {
-		err = Errors.Wrap(err, "connecting")
-		return
-	}
-	res = &Backend{db.Clone()}
-	return
+func New(db *mongodb.DB) *Backend {
+	return &Backend{db.Clone()}
 }
 
 // Close closes DB connection

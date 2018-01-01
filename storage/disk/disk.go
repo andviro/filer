@@ -14,15 +14,20 @@ var Errors = storage.Errors.Sub("disk")
 
 // Storage provides on-disk file storage primitives
 type Storage struct {
-	DataDir string `default:"/tmp"` // File base path
+	basePath string
 }
 
 var _ storage.Storage = (*Storage)(nil)
 
+// New creates disk storage with specified base path
+func New(basePath string) *Storage {
+	return &Storage{basePath}
+}
+
 // Save file from source reader
 func (s *Storage) Save(fn string, src io.Reader) (n int64, id string, err error) {
 	dir, base := filepath.Split(fn)
-	dir = filepath.Join(s.DataDir, strings.TrimPrefix(dir, s.DataDir))
+	dir = filepath.Join(s.basePath, strings.TrimPrefix(dir, s.basePath))
 	if err = os.MkdirAll(dir, 0755); err != nil {
 		err = Errors.Wrap(err, "ensuring path")
 		return

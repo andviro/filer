@@ -11,7 +11,7 @@ import (
 
 // Backend takes all file metadata from OS
 type Backend struct {
-	DataDir string `default:"/tmp"` // File base path
+	basePath string
 }
 
 var _ backend.Backend = (*Backend)(nil)
@@ -19,9 +19,14 @@ var _ backend.Backend = (*Backend)(nil)
 // Errors sub-class for disk backend
 var Errors = backend.Errors.Sub("disk")
 
+// New creates disk backend with specified base path
+func New(basePath string) *Backend {
+	return &Backend{basePath}
+}
+
 // Stat returns file info
 func (be *Backend) Stat(filename string) (res *backend.FileInfo, err error) {
-	id := filepath.Join(be.DataDir, strings.TrimPrefix(filename, be.DataDir))
+	id := filepath.Join(be.basePath, strings.TrimPrefix(filename, be.basePath))
 	st, err := os.Stat(id)
 	if err == os.ErrNotExist {
 		err = backend.ErrNotFound.Wrapf(err, "stat %q", id)
@@ -60,8 +65,8 @@ func (be *Backend) RemoveTransaction(filename string, commit func(*backend.FileI
 
 // Rename renames file on disk
 func (be *Backend) Rename(from, to string) (err error) {
-	from = filepath.Join(be.DataDir, strings.TrimPrefix(from, be.DataDir))
-	to = filepath.Join(be.DataDir, strings.TrimPrefix(to, be.DataDir))
+	from = filepath.Join(be.basePath, strings.TrimPrefix(from, be.basePath))
+	to = filepath.Join(be.basePath, strings.TrimPrefix(to, be.basePath))
 	if err = os.Rename(from, to); err == os.ErrNotExist {
 		return backend.ErrNotFound.Wrapf(err, "renaming %q to %q", from, to)
 	}
