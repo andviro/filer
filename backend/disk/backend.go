@@ -30,7 +30,7 @@ func (be *Backend) Stat(filename string) (res *backend.FileInfo, err error) {
 		DiskSize:     st.Size(),
 		Names:        []string{filename},
 		LastModified: st.ModTime(),
-		FileID:       "file://" + filename,
+		FileID:       filename,
 	}
 	return
 }

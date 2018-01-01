@@ -19,25 +19,42 @@ type Storage struct {
 
 var _ storage.Storage = (*Storage)(nil)
 
-// Ensure concatenates path components with service path prefix and creates
-// directory on disk. Final combined path is returned.
-func (s *Storage) Ensure(path ...string) (res string, err error) {
-	res = strings.TrimPrefix(filepath.Join(path...), s.DataDir)
-	res = filepath.Join(s.DataDir, res)
-	err = Errors.Wrap(os.MkdirAll(res, 0755), "ensuring path")
+// Save file from source reader
+func (s *Storage) Save(fn string, src io.Reader) (n int64, id string, err error) {
+	dir, base := filepath.Split(fn)
+	dir = filepath.Join(s.DataDir, strings.TrimPrefix(dir, s.DataDir))
+	if err = os.MkdirAll(dir, 0755); err != nil {
+		err = Errors.Wrap(err, "ensuring path")
+		return
+	}
+	id = filepath.Join(dir, base)
+	dest, err := os.Create(filepath.Join(dir, base))
+	if err != nil {
+		err = Errors.Wrap(err, "creating file")
+		return
+	}
+	n, err = io.Copy(dest, src)
+	err = Errors.Wrap(err, "saving file")
 	return
 }
 
-// Create file for writing
-func (s *Storage) Create(path string) (res io.WriteCloser, err error) {
-	res, err = os.Create(path)
-	err = Errors.Wrap(err, "creating file")
+// Load file into dest writer
+func (s *Storage) Load(id string, dest io.Writer) (err error) {
+	src, err := os.Open(id)
+	if err != nil {
+		err = Errors.Wrap(err, "opening file")
+		return
+	}
+	_, err = io.Copy(dest, src)
+	err = Errors.Wrap(err, "loading file")
 	return
 }
 
-// Open file for reading
-func (s *Storage) Open(fn string) (res io.ReadCloser, err error) {
-	res, err = os.Open(fn)
-	err = Errors.Wrap(err, "opening file")
-	return
+// Remove file
+func (s *Storage) Remove(id string) error {
+	err := os.Remove(id)
+	if err == os.ErrNotExist {
+		return storage.ErrNotFound.Wrapf(err, "removing %q", id)
+	}
+	return Errors.Wrapf(err, "removing %q", id)
 }

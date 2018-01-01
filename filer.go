@@ -11,23 +11,13 @@ type FileInfo interface {
 	ModTime() time.Time // Last modified time
 }
 
-// Storage enumerate basic file operations available in all storage backends
-type Storage interface {
-	Open(fn string) (res io.ReadCloser, err error)
-	Create(fn string) (res io.WriteCloser, err error)
-	Remove(fn string) error
-	Rename(from, to string) error
-}
-
-// Meta provides file metadata services
-type Meta interface {
-	Stat(fn string) (res FileInfo, err error)
-}
-
 // Service provides all file-related primitives
 type Service interface {
-	Meta
-	Storage
+	Download(fn string, dest io.Writer) (err error)
+	Upload(fn string, src io.Reader) (err error)
+	Remove(fn string) error
+	Rename(from, to string) error
+	Stat(fn string) (res FileInfo, err error)
 }
 
 //go:generate moq -out mock/filer.go -pkg mock . FileInfo Storage Backend

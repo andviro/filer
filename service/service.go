@@ -10,45 +10,51 @@ import (
 
 // Service implements filer.Service interface
 type Service struct {
-	backends []backend.Backend
-	storages map[string]storage.Storage
+	backend backend.Backend
+	storage storage.Storage
 }
 
 var _ filer.Service = (*Service)(nil)
 
 // New creates Service instance with provided storages and backends
-func New(b []backend.Backend, s map[string]storage.Storage) *Service {
+func New(b backend.Backend, s storage.Storage) *Service {
 	return &Service{b, s}
 }
 
-// Stat returns file metadata, ErrNotFound
+// Stat returns file metadata, ErrNotFound if not found
 func (s *Service) Stat(fn string) (res filer.FileInfo, err error) {
-	for _, b := range s.backends {
-		res, err = b.Stat(fn)
-		if backend.ErrNotFound.Contains(err) {
-			continue
+	return s.backend.Stat(fn)
+}
+
+// Upload creates file entry with specified filename from source reader
+func (s *Service) Upload(fn string, src io.Reader) error {
+	return s.backend.CreateTransaction(fn, func(fi *backend.FileInfo) (err error) {
+		fi.DiskSize, fi.FileID, err = s.storage.Save(fn, src)
+		return
+	})
+}
+
+// Download copies file with specified filename into dest writer
+func (s *Service) Download(fn string, dest io.Writer) (err error) {
+	fi, err := s.backend.Stat(fn)
+	if err != nil {
+		return
+	}
+	return s.storage.Load(fi.FileID, dest)
+}
+
+// Remove deletes file from storage ignoring file not found errors
+func (s *Service) Remove(fn string) (err error) {
+	err = s.backend.RemoveTransaction(fn, func(fi *backend.FileInfo) (err error) {
+		if err = s.storage.Remove(fi.FileID); storage.ErrNotFound.Contains(err) {
+			return nil
 		}
-		if err != nil {
-			return
-		}
-		break
+		return
+	})
+	if backend.ErrNotFound.Contains(err) {
+		err = nil
 	}
 	return
-}
-
-// Create creates file entry in backend and storage
-func (s *Service) Create(fn string) (res io.WriteCloser, err error) {
-	return
-}
-
-// Open opens file for reading
-func (s *Service) Open(fn string) (res io.ReadCloser, err error) {
-	return
-}
-
-// Remove deletes file from storage
-func (s *Service) Remove(fn string) error {
-	return nil
 }
 
 // Rename changes name of file

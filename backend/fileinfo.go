@@ -11,7 +11,7 @@ type FileInfo struct {
 	DiskSize     int64     // Physical size
 	Names        []string  // Filename aliases
 	LastModified time.Time // Creation/modification time
-	FileID       string    // Opaque storage identifier
+	FileID       string    // Opaque file identifier
 }
 
 var _ filer.FileInfo = (*FileInfo)(nil)

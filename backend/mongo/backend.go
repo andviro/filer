@@ -94,7 +94,7 @@ func (b *Backend) CreateTransaction(filename string, commit func(*backend.FileIn
 }
 
 // RemoveTransaction executes commit function in Remove transaction context
-func (b *Backend) RemoveTransaction(filename string, commit func(string, *backend.FileInfo) error) (err error) {
+func (b *Backend) RemoveTransaction(filename string, commit func(*backend.FileInfo) error) (err error) {
 	db := b.db.Clone()
 	defer db.Close()
 	coll := db.C("meta")
@@ -107,39 +107,20 @@ func (b *Backend) RemoveTransaction(filename string, commit func(string, *backen
 			"$pull": bson.M{
 				"names": filename,
 			},
-			"$set": bson.M{
-				"state": "removing",
-			},
 		},
 		ReturnNew: true,
 	}, &fi)
 	if err == mgo.ErrNotFound {
-		err = backend.ErrNotFound.Errorf("%q not found", filename)
-		return
+		return backend.ErrNotFound.Errorf("%q not found", filename)
 	}
 	if err != nil {
-		err = Errors.Wrapf(err, "updating %q", filename)
-		return
-	}
-	if err = commit(filename, &fi.FileInfo); err != nil {
-		if e := coll.UpdateId(fi.ID, bson.M{
-			"$addToSet": bson.M{
-				"names": filename,
-			},
-			"$set": bson.M{
-				"state": "saved",
-			},
-		}); e != nil {
-			return Errors.Wrapf(e, "updating %q (original error: %v)", filename, err)
-		}
-		return
+		return Errors.Wrapf(err, "updating %q", filename)
 	}
 	if len(fi.Names) == 0 {
+		if err = commit(&fi.FileInfo); err != nil {
+			return
+		}
 		return Errors.Wrapf(coll.RemoveId(fi.ID), "deleting %q", filename)
 	}
-	return Errors.Wrapf(coll.UpdateId(fi.ID, bson.M{
-		"$set": bson.M{
-			"state": "saved",
-		},
-	}), "updating state for %q", filename)
+	return
 }
